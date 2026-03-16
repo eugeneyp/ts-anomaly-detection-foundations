@@ -26,7 +26,7 @@ You'll use three datasets across the project. Each introduces a new challenge di
 
 **What it is.** 35 experiments from a real water circulation testbed at Skoltech (Moscow) with a motor-driven pump, valves, and 8 sensor channels: two accelerometers (vibration), motor current, pressure, temperature, thermocouple, voltage, and flow rate. Each experiment contains one injected anomaly — valve closures, fluid leaks, rotor imbalance, cavitation. Every point is labeled as normal/anomalous.
 
-**Why use this.** It's multivariate industrial sensor data from actual equipment — the closest publicly available analog to what AssetWatch sensors capture. You'll see how anomalies in one sensor propagate to others (closing a valve changes pressure, which changes flow, which changes vibration). The diversity of anomaly types (valve faults, imbalance, cavitation, leaks) maps directly to real maintenance scenarios. The fact that it includes both vibration and process variables bridges your foundations work into the vibration domain naturally.
+**Why use this.** It's multivariate industrial sensor data from actual equipment — the closest publicly available analog to what industrial condition-monitoring sensors capture. You'll see how anomalies in one sensor propagate to others (closing a valve changes pressure, which changes flow, which changes vibration). The diversity of anomaly types (valve faults, imbalance, cavitation, leaks) maps directly to real maintenance scenarios. The fact that it includes both vibration and process variables bridges your foundations work into the vibration domain naturally.
 
 **Download.** [https://github.com/waico/SKAB](https://github.com/waico/SKAB) or [https://www.kaggle.com/datasets/yuriykatser/skoltech-anomaly-benchmark-skab](https://www.kaggle.com/datasets/yuriykatser/skoltech-anomaly-benchmark-skab)
 
@@ -53,20 +53,23 @@ Each module introduces one technique, applies it to the appropriate dataset, and
 
 ### Module Overview & Status
 
-| Module | Status | Notebook | Key Deliverable |
-| --- | --- | --- | --- |
-| [Module 1: Fixed thresholds](./01-module-1-fixed-thresholds.md) | **Completed** | `@notebooks/01-eda-fixed-thresholds.ipynb` | Baseline F1 on NAB; visceral understanding of false alarm tradeoff |
-| [Module 2: Statistical baselines](./02-module-2-statistical-baselines.md) | **Completed** | `@notebooks/02-1-statistical-z-score.ipynb`,<br> `@notebooks/02-2-statistical-cusum.ipynb`,<br> `@notebooks/02-3-statistical-ewma.ipynb` | z-score, EWMA, CUSUM compared; window size sensitivity analysis |
-| [Module 3: Mahalanobis distance](./03-module-3-mahalanobis-distance.md) | Not started | | First multivariate method on SKAB; comparison with univariate z-scores |
-| [Module 4: Isolation Forest and OCSVM](./04-module-4-isolation-forest-ocsvm.md) | Not started | | Classical ML vs. Mahalanobis comparison; hyperparameter sensitivity |
-| [Module 5: Autoencoder](./05-module-5-autoencoder.md) | Not started | | Reconstruction error anomaly detection; latent space visualization; bottleneck experiment |
-| [Module 6: LSTM-Autoencoder](./06-module-6-lstm-autoencoder.md) | Not started | | Temporal model vs. static model on slow drift; sequence length analysis |
-| [Module 7: Variational Autoencoder](./07-module-7-vae.md) | Not started | | Dual anomaly scoring; β-VAE experiment; uncertainty quantification |
-| [Module 8: Comparative evaluation](./08-module-8-comparative-evaluation.md) | Not started | | Full comparison table; health indicator construction; synthesis write-up |
+
+| Module                                                                          | Status        | Notebook                                                                                                                         | Key Deliverable                                                                           |
+| ------------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [Module 1: Fixed thresholds](./01-module-1-fixed-thresholds.md)                 | **Completed** | `@notebooks/01-eda-fixed-thresholds.ipynb`                                                                                       | Baseline F1 on NAB; visceral understanding of false alarm tradeoff                        |
+| [Module 2: Statistical baselines](./02-module-2-statistical-baselines.md)       | **Completed** | `@notebooks/02-1-statistical-z-score.ipynb`, `@notebooks/02-2-statistical-cusum.ipynb`, `@notebooks/02-3-statistical-ewma.ipynb` | z-score, EWMA, CUSUM compared; window size sensitivity analysis                           |
+| [Module 3: Mahalanobis distance](./03-module-3-mahalanobis-distance.md)         | Not started   |                                                                                                                                  | First multivariate method on SKAB; comparison with univariate z-scores                    |
+| [Module 4: Isolation Forest and OCSVM](./04-module-4-isolation-forest-ocsvm.md) | Not started   |                                                                                                                                  | Classical ML vs. Mahalanobis comparison; hyperparameter sensitivity                       |
+| [Module 5: Autoencoder](./05-module-5-autoencoder.md)                           | Not started   |                                                                                                                                  | Reconstruction error anomaly detection; latent space visualization; bottleneck experiment |
+| [Module 6: LSTM-Autoencoder](./06-module-6-lstm-autoencoder.md)                 | Not started   |                                                                                                                                  | Temporal model vs. static model on slow drift; sequence length analysis                   |
+| [Module 7: Variational Autoencoder](./07-module-7-vae.md)                       | Not started   |                                                                                                                                  | Dual anomaly scoring; β-VAE experiment; uncertainty quantification                        |
+| [Module 8: Comparative evaluation](./08-module-8-comparative-evaluation.md)     | Not started   |                                                                                                                                  | Full comparison table; health indicator construction; synthesis write-up                  |
+
 
 ---
 
 ## Implementation order and time estimates
+
 
 | Module                      | Time    | Key deliverable                                                                           |
 | --------------------------- | ------- | ----------------------------------------------------------------------------------------- |
@@ -78,6 +81,7 @@ Each module introduces one technique, applies it to the appropriate dataset, and
 | 6. LSTM-Autoencoder         | 4–5 hrs | Temporal model vs. static model on slow drift; sequence length analysis                   |
 | 7. VAE                      | 3–4 hrs | Dual anomaly scoring; β-VAE experiment; uncertainty quantification                        |
 | 8. Comparative evaluation   | 4–5 hrs | Full comparison table; health indicator construction; synthesis write-up                  |
+
 
 **Total: ~27–34 hours over 3–4 weeks**
 
@@ -156,3 +160,4 @@ Each module introduces one technique, applies it to the appropriate dataset, and
 1. Salesforce Merlion — Time series anomaly detection library with unified dataset loading. — [https://opensource.salesforce.com/Merlion/](https://opensource.salesforce.com/Merlion/)
 2. scikit-learn — Novelty and Outlier Detection documentation. — [https://scikit-learn.org/stable/modules/outlier_detection.html](https://scikit-learn.org/stable/modules/outlier_detection.html)
 3. PyOD — Python Outlier Detection library (30+ algorithms). — [https://github.com/yzhao062/pyod](https://github.com/yzhao062/pyod)
+
