@@ -56,7 +56,7 @@ Each module introduces one technique, applies it to the appropriate dataset, and
 | Module | Status | Notebook | Key Deliverable |
 | --- | --- | --- | --- |
 | [Module 1: Fixed thresholds](./01-module-1-fixed-thresholds.md) | **Completed** | `@notebooks/01-eda-fixed-thresholds.ipynb` | Baseline F1 on NAB; visceral understanding of false alarm tradeoff |
-| [Module 2: Statistical baselines](./02-module-2-statistical-baselines.md) | Not started | | z-score, EWMA, CUSUM compared; window size sensitivity analysis |
+| [Module 2: Statistical baselines](./02-module-2-statistical-baselines.md) | **Completed** | `@notebooks/02-1-statistical-z-score.ipynb`,<br> `@notebooks/02-2-statistical-cusum.ipynb`,<br> `@notebooks/02-3-statistical-ewma.ipynb` | z-score, EWMA, CUSUM compared; window size sensitivity analysis |
 | [Module 3: Mahalanobis distance](./03-module-3-mahalanobis-distance.md) | Not started | | First multivariate method on SKAB; comparison with univariate z-scores |
 | [Module 4: Isolation Forest and OCSVM](./04-module-4-isolation-forest-ocsvm.md) | Not started | | Classical ML vs. Mahalanobis comparison; hyperparameter sensitivity |
 | [Module 5: Autoencoder](./05-module-5-autoencoder.md) | Not started | | Reconstruction error anomaly detection; latent space visualization; bottleneck experiment |
