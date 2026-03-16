@@ -1,4 +1,17 @@
-```
+# Skoltech Anomaly Benchmark (SKAB)
+
+**What it is:** The Skoltech Anomaly Benchmark (SKAB) consists of 35 experiments from a real water circulation testbed at Skoltech (Moscow). The testbed includes a motor-driven pump, valves, and 8 sensor channels (e.g., accelerometers, motor current, pressure, temperature, thermocouple, voltage, flow rate). Each experiment contains an injected anomaly, such as valve closures, fluid leaks, rotor imbalance, or cavitation, and every data point is labeled as normal or anomalous.
+
+**Source:** [https://github.com/waico/SKAB](https://github.com/waico/SKAB)
+**Downloaded on:** Monday, March 16, 2026
+
+## License
+The SKAB dataset is licensed under the **GNU General Public License v3.0 (GPL-3.0)**. 
+Usage of this dataset in this repository is intended for educational and research purposes within the constraints of the GPL-3.0 license. Please refer to the original repository for the full license details.
+
+## Directory Structure
+
+```text
   └── data                        # Data files and processing Jupyter Notebook
       ├── Load data.ipynb         # Jupyter Notebook to load all data
       ├── anomaly-free
