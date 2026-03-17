@@ -1,44 +1,77 @@
 ## Module 4: Isolation Forest and One-Class SVM — classical ML
 
-**Dataset:** SKAB (all experiments)
+**Status: Completed**
 
-**What you'll build.** Two classical ML approaches that learn the boundary of "normal" from unlabeled data.
+**Notebooks:**
+- `notebooks/04-swat-isolation-forest.ipynb` — IF on SWaT (51 features: 26 continuous + 25 binary actuators) vs. Mahalanobis
+- `notebooks/04-skab-isolation-forest.ipynb` — IF on SKAB valve1/valve2/other vs. Mahalanobis
 
-**Isolation Forest** builds random trees and scores anomalies by path length — anomalies are isolated quickly (short paths) because they're rare and different. **One-Class SVM** maps data to kernel space and finds a tight boundary around the normal data.
+**OCSVM omitted.** SWaT has 1.38M training rows; OCSVM kernel matrix computation is O(n²) in memory (~7.6 TB at that scale). SKAB's 400-row training sets would be feasible, but the module was scoped to the more informative SWaT + SKAB IF comparison given the scale constraint is the key production lesson. The O(n²) constraint is documented in both notebooks.
 
-**Implementation.**
+---
 
-```python
-from sklearn.ensemble import IsolationForest
-from sklearn.svm import OneClassSVM
-from sklearn.preprocessing import StandardScaler
+### What was implemented
 
-# Standardize features
-scaler = StandardScaler().fit(train[features])
-X_train = scaler.transform(train[features])
+**SWaT (`04-swat-isolation-forest.ipynb`):**
+- IF trained on 1.38M normal rows using all 51 features (26 continuous sensors + 25 binary actuators)
+- `contamination=0.0379` (known test attack rate), `n_estimators=200`
+- Contamination sweep (0.005 → 0.10), anomaly score distribution plot, time-series visualization
+- Compared against Module 3 Mahalanobis (26 continuous features only)
 
-# Isolation Forest
-iso_forest = IsolationForest(
-    n_estimators=200,
-    contamination=0.02,  # expect ~2% anomalies
-    random_state=42
-)
-iso_forest.fit(X_train)
+**SKAB (`04-skab-isolation-forest.ipynb`):**
+- IF trained on 400 normal rows per file, evaluated on full file (same split as Module 3)
+- `contamination='auto'` (Liu et al. 2008 theoretical threshold, no anomaly rate estimate required)
+- Benchmarked across valve1 (16 exp), valve2 (4 exp), other (14 exp)
+- Compared against Mahalanobis recomputed in the same loop
 
-# Score test data
-X_test = scaler.transform(test[features])
-test['iso_score'] = -iso_forest.score_samples(X_test)  # higher = more anomalous
+---
 
-# One-Class SVM
-ocsvm = OneClassSVM(kernel='rbf', nu=0.02, gamma='scale')
-ocsvm.fit(X_train)
-test['ocsvm_score'] = -ocsvm.decision_function(X_test)
-```
+### Results
 
-**Critical experiment.** Compare Isolation Forest, OCSVM, and Mahalanobis distance across all SKAB anomaly types. You'll likely find that Mahalanobis performs competitively on many anomaly types — confirming the Zope et al. (2019) finding that simple statistical methods match ML in many industrial scenarios. Isolation Forest will likely outperform on the cavitation and rotor imbalance experiments where the anomaly manifests as a nonlinear multivariate shift that Mahalanobis (which assumes Gaussian/linear correlations) misses.
+**SWaT:**
 
-**Hyperparameter sensitivity analysis.** Sweep `contamination` from 0.005 to 0.1 and plot precision/recall curves. Sweep OCSVM's `nu` and `gamma`. Document how sensitive each method is — this is a key production consideration. Isolation Forest is robust; OCSVM is notoriously sensitive.
+| Method | Features | F1 | Precision | Recall |
+|--------|----------|----|-----------|--------|
+| Univariate Z-Score | 26 | 0.4249 | 0.2967 | 0.7480 |
+| Mahalanobis Distance | 26 | **0.7240** | **0.7277** | **0.7202** |
+| Isolation Forest | 51 | 0.5154 | 0.4145 | 0.6812 |
 
-**What you'll learn.** Isolation Forest's key insight is that anomalies don't need to be far from normal — they just need to be *different* in a way that makes them easy to separate. This is a fundamentally different philosophy from distance-based methods (Mahalanobis, OCSVM). You'll also see that OCSVM's training time grows quadratically with data size — a practical showstopper at production scale.
+**SKAB (`contamination='auto'`):**
 
-**Production connection.** Isolation Forest is the most deployed classical ML anomaly detector in production PdM, largely because it runs on edge hardware (ESP32 microcontrollers) and has minimal hyperparameter sensitivity. STMicroelectronics' NanoEdge AI Studio includes Isolation Forest as a default model.
+| Dataset | Mahal F1 | IF F1 | ΔF1 |
+|---------|----------|-------|-----|
+| Valve1 (16 exp) | **0.7435** | 0.6814 | −0.062 |
+| Valve2 (4 exp)  | **0.6955** | 0.6872 | −0.008 |
+| Other  (14 exp) | **0.7104** | 0.6634 | −0.047 |
+
+Mahalanobis wins every benchmark. On SKAB, IF has higher recall (~0.87) but lower precision (~0.56); Mahalanobis achieves better balance.
+
+---
+
+### What was learned
+
+**1. Model structure matching the anomaly type is the dominant factor.**
+SWaT attacks are designed as stealthy covariance violations — exactly the regime Mahalanobis is built for. With 1.38M training rows providing a stable covariance estimate, Mahalanobis's explicit encoding of all 351 pairwise sensor relationships dominates IF's randomized feature selection (+0.21 F1).
+
+**2. Binary actuators did not help IF on SWaT.**
+The hypothesis that including 25 binary actuator columns would give IF an advantage did not hold. SWaT's 36 attack scenarios predominantly spoof sensor readings while leaving actuator states unchanged — the anomaly signal is in sensor-to-sensor correlations, not sensor-to-actuator relationships. The extra columns added noise without adding signal.
+
+**3. IF's threshold calibration is a structural weakness.**
+Mahalanobis uses a chi-squared critical value that self-calibrates to the learned covariance structure — no anomaly rate estimate required. IF's `contamination` parameter requires an empirical prior:
+- `contamination=0.05` on SKAB (true rate ~20–40%): threshold too conservative, recall collapses to 0.58 on Valve1
+- `contamination='auto'` (Liu et al. theoretical midpoint): threshold too permissive, precision drops to 0.56
+- `contamination='auto'` is strictly better than fixed values when the anomaly rate is unknown, but still doesn't match Mahalanobis's naturally balanced P/R
+
+**4. The prediction about `other` experiments did not materialise.**
+The module plan predicted IF would outperform Mahalanobis on cavitation, rotor imbalance, and fluid leaks (nonlinear anomalies). It did not — the threshold calibration penalty offset any scoring advantage from IF's non-parametric nature.
+
+**5. OCSVM scale constraint is a real production blocker.**
+At 1.38M rows, the RBF kernel matrix alone would be ~7.6 TB. This is not a tuning problem — it's a fundamental algorithmic constraint. IF's sublinear training time makes it the practical default for large industrial datasets.
+
+---
+
+### What you'll learn (original, confirmed by results)
+
+Isolation Forest's key insight — anomalies are *easy to isolate*, not necessarily *far from normal* — is a genuinely different philosophy from distance-based methods. But the results show this philosophical difference doesn't automatically translate to better performance when the anomaly type (covariance violations, large spikes) is well-handled by simpler methods with principled thresholds.
+
+**Production connection.** Isolation Forest remains the most deployed classical ML anomaly detector on edge hardware (ESP32 microcontrollers, STMicroelectronics NanoEdge AI Studio) because of its low memory footprint and fast inference. The threshold calibration challenge is real in production — `contamination='auto'` is the right default when attack rates are unknown.
