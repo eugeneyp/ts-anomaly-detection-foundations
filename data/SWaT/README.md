@@ -1,5 +1,7 @@
 # SWaT Dataset: Secure Water Treatment System
 
+Downloaded on March 17, 2026 from https://www.kaggle.com/datasets/vishala28/swat-dataset-secure-water-treatment-system
+
 This dataset contains sensor and actuator measurements collected from the Secure Water Treatment (SWaT) testbed. It includes both normal operational data and cyber-attack scenarios, simulating real-world industrial control system intrusions. The dataset is suitable for research in anomaly detection, intrusion detection, cybersecurity, and machine learning applications in critical infrastructure.
 
 The SWaT dataset is a benchmark dataset widely used in industrial control system (ICS) security research. It consists of time-series sensor and actuator data collected from a real-world water treatment testbed. It includes both normal and attack scenarios, making it highly suitable for tasks such as anomaly detection, intrusion detection, time-series classification, and ICS fault detection. ** Data Overview**

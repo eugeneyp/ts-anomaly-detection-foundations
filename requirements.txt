@@ -1,6 +1,7 @@
 jupyter
 ipykernel
 pandas
-numpy
+numpy<2
 matplotlib
 scikit-learn
+torch
