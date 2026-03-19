@@ -1,4 +1,4 @@
-## Module 4: Isolation Forest and One-Class SVM — classical ML
+## Module 4: Isolation Forest — classical ML
 
 **Status: Completed**
 

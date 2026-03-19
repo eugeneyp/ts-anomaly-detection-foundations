@@ -1,6 +1,8 @@
-## Module 5: Autoencoder — learning to reconstruct "normal"
+## Module 6: Autoencoder — learning to reconstruct "normal"
 
-**Dataset:** SKAB for training and initial testing, then SWaT for scale
+**Dataset:** SKAB for initial testing, NASA SMAP/MSL for scale benchmark
+
+**Status: Not started**
 
 **What you'll build.** A standard feedforward autoencoder trained only on healthy data. The reconstruction error becomes your anomaly score.
 
@@ -55,6 +57,8 @@ with torch.no_grad():
 *Experiment B — Latent space visualization.* Extract the latent vectors `z` for both healthy and anomalous data. Project to 2D with t-SNE or UMAP. Healthy points should cluster tightly; anomalous points should scatter away from the cluster. Color by anomaly type (valve, imbalance, cavitation) — do different fault types map to different regions of latent space? If yes, the autoencoder is learning something meaningful about fault modes, not just "different from normal."
 
 *Experiment C — Bottleneck dimension.* Train autoencoders with latent_dim = 2, 4, 8, 16, 32. Plot training loss and anomaly detection F1 for each. Too small → underfits normal data, high reconstruction error on everything. Too large → memorizes everything including anomalies, low reconstruction error on anomalies. The sweet spot teaches you about the information-theoretic capacity of "normal" — how many dimensions does healthy operation actually need?
+
+**Scale benchmark on NASA SMAP/MSL.** After validating the architecture on SKAB (8 channels), scale to the NASA SMAP/MSL dataset (25–55 channels, 500K+ timesteps per entity). NASA provides a realistic test of whether reconstruction-based detection generalizes to longer sequences and more channels. Compare autoencoder F1 on the NASA benchmark against prior methods (Mahalanobis, IF, RCF) where applicable.
 
 **What you'll learn.** The autoencoder is learning a compressed model of normal operation. When it encounters an anomaly, it tries to reconstruct it using only the vocabulary of "normal" patterns — and fails, producing high reconstruction error. This is conceptually identical to what a human analyst does: they've internalized what normal looks like, and anomalies jump out because they don't fit the mental model. The bottleneck dimension experiment reveals how complex "normal" really is.
 
