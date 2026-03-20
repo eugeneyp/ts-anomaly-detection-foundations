@@ -2,7 +2,7 @@
 
 **Dataset:** SKAB for initial testing, NASA SMAP/MSL as primary benchmark
 
-**Status: Not started**
+**Status: In progress** — SWaT notebook at `notebooks/06-swat-lstm-ae.ipynb`
 
 **What you'll build.** Replace the feedforward layers with LSTM layers so the model learns temporal sequences, not just individual snapshots. Feed windows of consecutive timesteps and reconstruct the entire window.
 
