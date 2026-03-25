@@ -22,15 +22,25 @@ Input W → Encoder E → latent Z
                     → Decoder D2 → W2
 ```
 
-**Two-phase training:**
+**Training (single loop, Algorithm 1):**
 
-- **Phase 1 (AE reconstruction):** Train E+D1 and E+D2 independently as standard autoencoders. Loss = ||W − D1(E(W))||² + ||W − D2(E(W))||²
-- **Phase 2 (adversarial):** Train E+D1 to fool D2 (minimize D2's ability to detect reconstruction errors). Train D2 to detect when its input came from D1 rather than the real encoder. Loss introduces a term that amplifies anomaly scores while suppressing false alarms on normal data.
+Both losses are computed in the same forward pass each iteration. `n` is the epoch counter (1 to N) — it appears in the loss coefficients so the adversarial term weight `(1 − 1/n)` grows from 0 toward 1 as training progresses. Two separate optimizers: one for AE1 (E+D1), one for AE2 (D2).
+
+For each batch window W, each epoch n:
+- `Z = E(W)`
+- `W1' = D1(Z)` — AE1 reconstruction
+- `W2' = D2(Z)` — AE2 reconstruction
+- `W2'' = D2(E(W1'))` — AE2 applied to AE1's output
+
+Loss for AE1 (E+D1): `ℒ_AE1 = (1/n)||W − W1'||₂ + (1 − 1/n)||W − W2''||₂`
+Loss for AE2 (D2):   `ℒ_AE2 = (1/n)||W − W2'||₂ − (1 − 1/n)||W − W2''||₂`
+
+AE1 minimizes both its own reconstruction error *and* the adversarial term (making W1' hard for AE2 to distinguish from real data). AE2 minimizes its own reconstruction error but *maximizes* the adversarial term (learning to detect AE1's outputs). The `(1 − 1/n)` schedule starts at 0 (pure reconstruction) and ramps to 1 (full adversarial weight) over training.
 
 **Anomaly score at inference:**
 
 ```
-score(W) = α · ||W − D1(E(W))||² + β · ||W − D2(D1(E(W)))||²
+score(W) = α · ||W − D1(E(W))||₂ + β · ||W − D2(E(D1(E(W))))||₂
 ```
 
 The α/β trade-off controls sensitivity vs. specificity: higher β amplifies anomaly signal but increases false alarms on normal data. Sweep α+β=1 to find the operating point.
@@ -58,12 +68,16 @@ USAD is the natural next step for two reasons:
 
 Implement the two-phase training loop in PyTorch following the paper. Key implementation details:
 
-- **Window construction.** Slide a window of length `w` (start with `w=12`, matching the paper) over the normalized training data. Each sample is a flattened window vector of size `51 × w`.
-- **Architecture.** Encoder: `[51×w → 512 → 256 → z_dim]`. Decoders D1, D2: `[z_dim → 256 → 512 → 51×w]`. Use `z_dim=40` (paper default). ReLU activations throughout.
-- **Phase 1 loss:** `L1 = (1/n) Σ ||W − D1(E(W))||² + ||W − D2(E(W))||²`
-- **Phase 2 loss:** `L2 = (1/n) Σ ||W − D1(E(W))||² − ||W − D2(D1(E(W)))||²` for E+D1; `L3 = (1/n) Σ ||W − D2(D1(E(W)))||²` for D2
-- **Training schedule.** Alternate phase 1 and phase 2 each epoch. Train for 100 epochs (paper default). Use Adam with lr=1e-4.
-- **Anomaly score.** For each window, compute `score = α·||W−D1(E(W))||² + β·||W−D2(D1(E(W)))||²` with `α=0.1, β=0.9` as starting point.
+- **Data source.** Load `merged.csv` only — it contains the full 11-day dataset with `Normal/Attack` labels. The raw file has ~495K duplicate rows (same timestamp, same values); deduplicate by timestamp (drop duplicates, sort, reset index) to get 946,719 unique rows.
+- **Train/test split.** First 496,800 rows = 7-day normal period (training); remaining 449,919 rows = 4-day attack period (test). This matches the paper's split exactly. Training data has 0% attack rate; test data has ~12% attack rate (paper reports 11.98%).
+- **Downsampling.** Apply block-median downsampling (factor 5) to **both** train and test: for each consecutive block of 5 rows, take the median value per feature. Train: 496,800 → 99,360 rows. Test: 449,919 → ~89,983 rows. Downsampling both sets is required for consistency — the model trains on 5-second block medians (W=12 covers 60 seconds of real time); presenting raw 1-second samples at inference would create a 5× timescale mismatch and a different feature distribution. **Label rule for test blocks:** OR (max) — a block is labeled "Attack" if any of its 5 constituent rows is an attack, so short anomalies are not swallowed by aggregation. Do not use simple decimation (`[::5]`) — use reshape + median.
+- **Window construction.** Slide a window of length `w=12` over the downsampled, normalized data. Each sample is a flattened window vector of size `w × n_features = 12 × 51 = 612`.
+- **Architecture.** Three linear layers per encoder/decoder (Appendix A.4). Encoder: `[612 → 306 → 153 → 40]` with ReLU after each layer. Decoders D1, D2: `[40 → 153 → 306 → 612]` with ReLU after the first two layers and Sigmoid on the output. Use `z_dim=40` (paper default). Layer sizes follow the paper's halving rule: `input_size=612`, `input_size/2=306`, `input_size/4=153`.
+- **Training loop.** Single loop — both losses computed per batch, two separate Adam optimizers (one for E+D1, one for D2), both stepped each iteration. Train for 70 epochs (paper default for SWaT). Use Adam with default lr (paper specifies "default learning rate").
+- **Loss for AE1 (optimizer 1 — E+D1):** `ℒ_AE1 = (1/n)||W − D1(E(W))||₂ + (1 − 1/n)||W − D2(E(D1(E(W))))||₂`
+- **Loss for AE2 (optimizer 2 — D2):** `ℒ_AE2 = (1/n)||W − D2(E(W))||₂ − (1 − 1/n)||W − D2(E(D1(E(W))))||₂`
+- where `n` is the current epoch (1-indexed), so the adversarial weight `(1 − 1/n)` ramps from 0 to ~1 over training.
+- **Anomaly score.** For each window, compute `score = α·||W−D1(E(W))||₂ + β·||W−D2(E(D1(E(W))))||₂` with `α=0.1, β=0.9` as starting point.
 
 #### 2. Threshold sweep (α/β and percentile)
 
