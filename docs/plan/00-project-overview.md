@@ -76,8 +76,8 @@ Each module introduces one technique, applies it to the appropriate dataset, and
 | [Module 3: Mahalanobis distance](./03-module-3-mahalanobis-distance.md)         | **Completed** | `@notebooks/03-skab-valve1-0.ipynb`, `@notebooks/03-skab-valve1-benchmark.ipynb`, `@notebooks/03-skab-valve2-benchmark.ipynb`, `@notebooks/03-skab-other-benchmark.ipynb`, `@notebooks/03-swat-benchmark.ipynb` | Univariate z-score vs. Mahalanobis benchmarked across SKAB valve1/valve2/other (16 experiments each) and SWaT (1.44M rows); SWaT showed decisive Mahalanobis advantage (F1 0.72 vs 0.42) due to z-score false alarm accumulation across 26 sensors |
 | [Module 4: Isolation Forest](./04-module-4-isolation-forest.md)                 | **Completed** | `@notebooks/04-swat-isolation-forest.ipynb`, `@notebooks/04-skab-isolation-forest.ipynb` | IF vs. Mahalanobis on SWaT (51 features) and SKAB (valve1/valve2/other); Mahalanobis wins every benchmark; key finding: IF's `contamination` threshold lacks Mahalanobis's principled self-calibration; OCSVM omitted (O(n²) memory at 1.38M rows) |
 | [Module 5: Autoencoder](./05-module-5-autoencoder.md)                           | **Completed** | `@notebooks/05-swat-autoencoder.ipynb`                                                                                         | Feedforward AE on SWaT; F1 0.7264 (p99.9 threshold), beats Mahalanobis (0.7240) and IF (0.5154); 225× normal/attack error separation; data-driven threshold calibration via validation percentile sweep |
-| [Module 6: LSTM-Autoencoder](./06-module-6-lstm-autoencoder.md)                 | **Completed** | `@notebooks/06-swat-lstm-ae.ipynb`                                                                                             | LSTM-AE on SWaT; F1 0.7533 (p99.9, 40 epochs, stride=30) — best result in the project; +0.0269 over feedforward AE; 324× normal/attack separation; key lesson: convergence matters more than architecture on this dataset |
-| [Module 7: Comparative evaluation](./07-module-7-comparative-evaluation.md)     | **Completed** | `@notebooks/07-msl-lstm-ae.ipynb`                                                                                              | LSTM-AE on NASA MSL: per-channel training (27 channels), mean-MSE vs max-MSE score modes, seq-length ablation; micro F1 mean-MSE=0.1292 / max-MSE=0.1339 (negative result: LSTM-AE underperforms FF-AE 0.2241 due to sparse training windows ~25–130 per channel; max-MSE hypothesis not confirmed, +0.0003 delta only) |
+| [Module 6: LSTM-Autoencoder](./06-module-6-lstm-autoencoder.md)                 | **Completed** | `@notebooks/06-swat-lstm-ae.ipynb`, `@notebooks/06-msl-lstm-ae.ipynb`                                                         | LSTM-AE on SWaT (F1 0.7533, p99.9, 40 epochs, stride=30) — best result in the project; +0.0269 over feedforward AE; 324× normal/attack separation. LSTM-AE on NASA MSL: per-channel training (27 channels), mean-MSE vs max-MSE score modes; micro F1 mean-MSE=0.1292 / max-MSE=0.1339 (negative result: underperforms FF-AE 0.2241 due to sparse training windows ~25–130 per channel) |
+| [Module 7: USAD](./07-module-7-usad.md)                                         | **Not started** | `@notebooks/07-swat-usad.ipynb`, `@notebooks/07-msl-usad.ipynb`                                                              | USAD (two-decoder adversarial AE) on SWaT and NASA MSL; compare vs. LSTM-AE F1 0.7533 on SWaT; test whether adversarial amplification recovers MSL performance lost by LSTM-AE (micro F1 0.1292) |
 
 
 ---
@@ -93,7 +93,7 @@ Each module introduces one technique, applies it to the appropriate dataset, and
 | 4. Isolation Forest         | 3–4 hrs | Classical ML vs. Mahalanobis comparison; hyperparameter sensitivity                       |
 | 5. Autoencoder              | 4–5 hrs | Reconstruction error anomaly detection; latent space visualization; bottleneck experiment |
 | 6. LSTM-Autoencoder         | 4–5 hrs | Temporal model vs. static model on slow drift; NASA SMAP/MSL benchmark                   |
-| 7. Comparative evaluation   | 4–5 hrs | Full comparison table; health indicator construction; synthesis write-up                  |
+| 7. USAD                     | 5–6 hrs | Two-decoder adversarial AE on SWaT and MSL; α/β sweep; comparison vs. LSTM-AE            |
 
 
 **Total: ~25–30 hours over 3–4 weeks**
@@ -111,6 +111,8 @@ Each module introduces one technique, applies it to the appropriate dataset, and
 **Module 5:** No single paper — the use of autoencoders for anomaly detection emerged gradually. An & Cho (2015) "Variational Autoencoder Based Anomaly Detection Using Reconstruction Probability" is the closest to a landmark for reconstruction-based detection.
 
 **Module 6:** Hundman et al. (2018) "Detecting Spacecraft Anomalies Using LSTMs and Nonparametric Dynamic Thresholding" — KDD 2018. The NASA paper that introduced the SMAP/MSL datasets and demonstrated LSTM-based anomaly detection on real spacecraft telemetry. Practical and well-written. [https://arxiv.org/abs/1802.04431](https://arxiv.org/abs/1802.04431)
+
+**Module 7:** Audibert, Michiardi, Guyard, Marti & Zuluaga (2020). "USAD: UnSupervised Anomaly Detection on Multivariate Time Series." *KDD 2020*. Read Section 3 (architecture) and Section 4 (experiments on SWaT and SMAP/MSL) before implementing. Reference implementation at [https://github.com/liuziyi/USAD](https://github.com/liuziyi/USAD) — use for architecture validation and hyperparameter defaults but implement from scratch.
 
 **Overarching survey:** Chandola, Banerjee & Kumar (2009) "Anomaly Detection: A Survey" — [https://dl.acm.org/doi/10.1145/1541880.1541882](https://dl.acm.org/doi/10.1145/1541880.1541882). Read the taxonomy sections (point/contextual/collective anomalies) before starting Module 1 — it gives you the conceptual framework for understanding why different anomaly types require different detection approaches.
 
@@ -156,6 +158,7 @@ Each module introduces one technique, applies it to the appropriate dataset, and
 ### Applied papers
 
 1. Hundman et al. (2018). "Detecting Spacecraft Anomalies Using LSTMs and Nonparametric Dynamic Thresholding." *KDD 2018*. — [https://arxiv.org/abs/1802.04431](https://arxiv.org/abs/1802.04431)
+2. Audibert, Michiardi, Guyard, Marti & Zuluaga (2020). "USAD: UnSupervised Anomaly Detection on Multivariate Time Series." *KDD 2020*. Reference implementation: [https://github.com/liuziyi/USAD](https://github.com/liuziyi/USAD)
 2. Rüttinger et al. (2021). "Autoencoder-based Condition Monitoring and Anomaly Detection Method for Rotating Machines." *IEEE*. — [https://arxiv.org/pdf/2101.11539](https://arxiv.org/pdf/2101.11539)
 3. Zope et al. (2019). "Anomaly Detection and Diagnosis in Manufacturing Systems." *PHM Conference*. — [https://papers.phmsociety.org/index.php/phmconf/article/view/815](https://papers.phmsociety.org/index.php/phmconf/article/view/815)
 4. Katser & Kozitsin (2020). "Skoltech Anomaly Benchmark (SKAB)." *Kaggle*. — [https://www.kaggle.com/dsv/1693952](https://www.kaggle.com/dsv/1693952)
